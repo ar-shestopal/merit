@@ -38,6 +38,9 @@ module Merit
           .where(category: options[:category] || 'default')
           .first_or_create
           .score_points << point
+
+        user = find_user_by_point(point)
+        check_rank(user)
         point
       end
 
@@ -46,6 +49,15 @@ module Merit
       end
 
       private
+
+      def find_user_by_point(point)
+        sash = point.score.sash
+        Merit.user_model.find_by_sash_id(sash.id)
+      end
+
+      def check_rank(user)
+        Merit::RankRules.new.check_rank_rules(user.id)
+      end
 
       def create_scores
         scores << Merit::Score.create

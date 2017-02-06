@@ -28,10 +28,10 @@ module Merit
 
     # Not part of merit after_filter. To be called asynchronously:
     # Merit::RankRules.new.check_rank_rules
-    def check_rank_rules
+    def check_rank_rules(id = nil)
       defined_rules.each do |scoped_model, level_and_rules|
         level_and_rules.sort.each do |level, rule|
-          grant_when_applies(scoped_model, rule, level)
+          grant_when_applies(scoped_model, rule, level, id)
         end
       end
     end
@@ -43,8 +43,8 @@ module Merit
 
     private
 
-    def grant_when_applies(scoped_model, rule, level)
-      scope_to_promote(scoped_model, rule.level_name, level).each do |object|
+    def grant_when_applies(scoped_model, rule, level, id = nil)
+      scope_to_promote(scoped_model, rule.level_name, level, id).each do |object|
         next unless rule.applies?(object)
         object.update_attribute rule.level_name, level
       end
@@ -62,10 +62,11 @@ module Merit
       end
     end
 
-    def scope_to_promote(scope, level_name, level)
+    def scope_to_promote(scope, level_name, level, id = nil)
       if Merit.orm == :mongoid
         scope.where(:"#{level_name}".lt => level)
       else
+        return scope.where(id: id)  if id.present?
         scope.where("#{level_name} < #{level}")
       end
     end
